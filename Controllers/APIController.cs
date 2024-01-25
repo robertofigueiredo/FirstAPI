@@ -7,10 +7,10 @@ namespace Awesomedevevents.API.Controllers
 {
     [Route("api/dev-events")]
     [ApiController]
-    public class DevEventsController : ControllerBase
+    public class APIController : ControllerBase
     {
         private readonly DevEventsDbContext _context;
-        public DevEventsController(DevEventsDbContext context)
+        public APIController(DevEventsDbContext context)
         {
             _context = context;
         }
