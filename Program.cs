@@ -2,7 +2,7 @@ using Awesomedevevents.API.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<DevEventsDbContext>();
+builder.Services.AddSingleton<UsuarioDbContext>();
 // Add services to the container.
 
 builder.Services.AddControllers();

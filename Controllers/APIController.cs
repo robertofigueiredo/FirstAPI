@@ -1,98 +1,126 @@
 ﻿using Awesomedevevents.API.Entities;
-using Awesomedevevents.API.Persistence;
-using Microsoft.AspNetCore.Http;
+using CadastroUsuario.API.Log_De_Erro;
+using Domain.Interface;
+using Domain.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace Awesomedevevents.API.Controllers
 {
-    [Route("api/dev-events")]
+    [Route("api/Usuario")]
     [ApiController]
     public class APIController : ControllerBase
     {
-        private readonly DevEventsDbContext _context;
-        public APIController(DevEventsDbContext context)
+        private readonly IUsuario _usuario;
+        public APIController(IUsuario usuario)
         {
-            _context = context;
+            _usuario = usuario;
         }
 
-        // api/dev-events GET
+        Logs_De_Erro logs_De_Erro = new Logs_De_Erro();
 
-        [HttpGet]
-        public IActionResult GetAll()
+        [HttpGet("GetUsuariosBanco")]
+        public IActionResult GetUsuariosBanco()
         {
-            var devEvents = _context.DevEvents.Where(rr => !rr.IsDeleted).ToList();
+            try
+            {
+                var RetornoListaUsuario = _usuario.GetUsuariosBanco().Where(rr => !rr.IsDeleted).ToList();
+                if (!RetornoListaUsuario.Any())
+                {
+                    return NotFound("Nenhum Usuário foi localizado");
+                }
+                return Ok(RetornoListaUsuario);
+            }
+            catch (Exception ex)
+            {
+                logs_De_Erro.Excecao_Erro(ex);
+                throw ex;
+            }
 
-            return Ok(devEvents);
         }
-
-        // api/dev-events/23124343 GET
 
         [HttpGet("{id}")]
-        public IActionResult GetById(Guid id)
+        public IActionResult GetUsuariosId(int id)
         {
-            var devEvents = _context.DevEvents.SingleOrDefault(rr => rr.Id == id);
-
-            if (devEvents == null)
+            try
             {
-                return NotFound();
-            }
-            return Ok(devEvents);
-        }
+                var RetornoFiltroUsuario = _usuario.GetUsuariosId().SingleOrDefault(rr => rr.Id == id);
 
-        // api/dev-events POST
+                if (RetornoFiltroUsuario == null)
+                {
+                    return NotFound("Usuário não encontrado");
+                }
+
+                return Ok(RetornoFiltroUsuario);
+            }
+            catch (Exception ex)
+            {
+                logs_De_Erro.Excecao_Erro(ex);
+                return StatusCode(500, "Erro interno do servidor");
+            }
+        }
 
         [HttpPost]
-        public IActionResult Post(DevEvent devEvent)
+        public IActionResult IncluirUsuario(Usuario dadosUsuario)
         {
-            _context.DevEvents.Add(devEvent);
-            return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
+
+            try
+            {
+                bool sucessoInclusao = _usuario.IncluirUsuario(dadosUsuario);
+
+                if (!sucessoInclusao)
+                {
+                    return NotFound("Erro ao incluir usuário");
+                }
+                return Ok("Usuário incluido com sucesso");
+            }
+            catch (Exception ex)
+            {
+                logs_De_Erro.Excecao_Erro(ex);
+                return NotFound("Erro ao incluir usuário");
+            }
         }
 
-        // api/dev-events/23124343 PUT
 
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id, DevEvent input)
+        public IActionResult AtualizaUsuario(Guid id, UsuarioEntitie Entrada_Dados)
         {
-            var devEvents = _context.DevEvents.SingleOrDefault(rr => rr.Id == id);
-
-            if (devEvents == null)
+            try
             {
-                return NotFound();
-            }
-            devEvents.Update(input.Title, input.Description, input.StartDate, input.EndDate);
-            return NoContent();
-        }
+                var RetornoAtualizaUsuario = _usuario.AtualizaUsuario(id);
 
-        // api/dev-events/2321313 DELETE
+                if (!RetornoAtualizaUsuario)
+                {
+                    return NotFound("Erro ao atualizar Usuário");
+                }
+            }
+            catch (Exception ex)
+            {
+                logs_De_Erro.Excecao_Erro(ex);
+                return NotFound("Erro ao atualizar usuário");
+            }
+            return Ok();
+        }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
+        public IActionResult DeletarUsuario(Guid id)
         {
-            var devEvents = _context.DevEvents.SingleOrDefault(rr => rr.Id == id);
-            if (devEvents == null)
+            try
             {
-                return NotFound();
+                var retornoDeletarUsuario = _usuario.DeletarUsuario(id);
+                if (!retornoDeletarUsuario)
+                {
+                    return NotFound("Erro ao deletar usuário");
+                }
             }
-            devEvents.Delete();
+            catch (Exception ex)
+            {
+                logs_De_Erro.Excecao_Erro(ex);
+                return NotFound("Erro ao deletar usuário");
 
-            return NoContent();
+            }
+            return Ok();
         }
 
-        // api/dev-events/3fa85f64-5717-4562-b3fc-2c963f66afa6/speakers POST 
-
-        [HttpPost("{id}/speakers")]
-        public IActionResult PostSpeaker(Guid id, DevEventSpeaker speaker)
-        {
-            var devEvent = _context.DevEvents.SingleOrDefault(rr => rr.Id == id);
-
-            if (devEvent == null)
-            {
-                return NotFound();
-            }
-
-            devEvent.Speakers.Add(speaker);
-
-            return NoContent();
-        }
     }
 }
